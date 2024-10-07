@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tic Tac Toe</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+      }
+
+      .game-container {
+        text-align: center;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(3, 100px);
+        grid-template-rows: repeat(3, 100px);
+        gap: 5px;
+        margin: 20px auto;
+      }
+
+      .cell {
+        background-color: #fff;
+        border: 2px solid #333;
+        font-size: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+
+      .cell.taken {
+        cursor: not-allowed;
+      }
+
+      #reset-button {
+        padding: 10px 20px;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="game-container">
+      <h1>Tic Tac Toe</h1>
+      <div id="game-board" class="board"></div>
+      <div class="game-info">
+        <p id="game-status">Player X's turn</p>
+        <button id="reset-button">Reset Game</button>
+      </div>
+    </div>
+    <script>
+      const board = document.getElementById('game-board');
+      const statusDisplay = document.getElementById('game-status');
+      const resetButton = document.getElementById('reset-button');
+      let currentPlayer = 'X';
+      let gameActive = true;
+      let gameState = Array(9).fill('');
+      let playerMoves = { X: [], O: [] }; // Track player moves
+
+      // Define the winning conditions: combinations of indices that represent a win
+      const winningConditions = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6],
+      ];
+
+      // Handles the logic when a cell is clicked and played
+      function handleCellPlayed(clickedCell, clickedCellIndex) {
+        // Update the game state to reflect the current player's move
+        gameState[clickedCellIndex] = currentPlayer;
+        // Display the current player's symbol in the clicked cell
+        clickedCell.textContent = currentPlayer;
+        // Mark the cell as taken to prevent further clicks
+        clickedCell.classList.add('taken');
+
+        // Track the player's move
+        playerMoves[currentPlayer].push(clickedCellIndex);
+
+        // If it is the fourth move for the player, remove their first move
+        if (playerMoves[currentPlayer].length > 3) {
+          const firstMoveIndex = playerMoves[currentPlayer].shift();
+          gameState[firstMoveIndex] = '';
+          const firstMoveCell = board.children[firstMoveIndex];
+          firstMoveCell.textContent = '';
+          firstMoveCell.classList.remove('taken');
+        }
+      }
+
+      // Switches the current player from 'X' to 'O' or vice versa
+      function handlePlayerChange() {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        // Update the game status to show whose turn it is
+        statusDisplay.textContent = `Player ${currentPlayer}'s turn`;
+      }
+
+      // Validates if there's a winner or if the game is a draw
+      function handleResultValidation() {
+        let roundWon = checkWin();
+
+        if (roundWon) {
+          // If a player has won, update the status and deactivate the game
+          statusDisplay.textContent = `Player ${currentPlayer} has won!`;
+          gameActive = false;
+          return;
+        }
+
+        // If all cells are filled and no winner, declare a draw
+        if (isDraw()) {
+          statusDisplay.textContent = `Game ended in a draw!`;
+          gameActive = false;
+        }
+      }
+
+      // Checks if there is a winning condition
+      function checkWin() {
+        for (let i = 0; i < winningConditions.length; i++) {
+          const [a, b, c] = winningConditions[i];
+          // Check if the game state matches the winning condition
+          if (
+            gameState[a] &&
+            gameState[a] === gameState[b] &&
+            gameState[a] === gameState[c]
+          ) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      // Checks if the game is a draw (all cells filled with no winner)
+      function isDraw() {
+        return !gameState.includes('');
+      }
+
+      // Handles a cell click event
+      function handleCellClick(event) {
+        const clickedCell = event.target;
+        // Get the index of the clicked cell
+        const clickedCellIndex = Array.from(board.children).indexOf(
+          clickedCell
+        );
+
+        // If the cell is already taken or the game is not active, ignore the click
+        if (gameState[clickedCellIndex] !== '' || !gameActive) {
+          return;
+        }
+
+        // Process the player's move
+        handleCellPlayed(clickedCell, clickedCellIndex);
+        // Validate the result after the move
+        handleResultValidation();
+
+        // If the game is still active, switch to the other player
+        if (gameActive) {
+          handlePlayerChange();
+        }
+      }
+
+      // Resets the game to its initial state
+      function handleRestartGame() {
+        gameActive = true;
+        currentPlayer = 'X';
+        gameState = Array(9).fill('');
+        playerMoves = { X: [], O: [] }; // Reset player moves
+        // Reset the game status display
+        statusDisplay.textContent = `Player X's turn`;
+        // Clear the board and reset cell styles
+        Array.from(board.children).forEach((cell) => {
+          cell.textContent = '';
+          cell.classList.remove('taken');
+        });
+      }
+
+      // Creates the game board with 9 cells
+      function createBoard() {
+        board.innerHTML = '';
+        // Create 9 cells for the board
+        for (let i = 0; i < 9; i++) {
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          // Add an event listener to handle clicks on each cell
+          cell.addEventListener('click', handleCellClick);
+          board.appendChild(cell);
+        }
+      }
+
+      // Initialize the game by creating the board and adding the reset button event listener
+      createBoard();
+      resetButton.addEventListener('click', handleRestartGame);
+    </script>
+  </body>
+</html>
